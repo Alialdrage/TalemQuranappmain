@@ -115,7 +115,7 @@ dependencies {
   "ksp"(libs.moshi.kotlin.codegen)
 }
 
-// السكربت الذكي الذي سيجبر المشروع على كتابة الملف يدوياً في جذر المشروع الخارجي والداخلي معاً لضمان تخطي الـ 404
+// السكربت التلقائي لإنشاء المجلدات والملفات المفقودة لـ GitHub Actions برمجياً فوراً لمنع خطأ 404
 tasks.register("forceGenerateWorkflow") {
     doLast {
         val rootWorkflowDir = File(rootDir, ".github/workflows")
@@ -150,7 +150,6 @@ tasks.register("forceGenerateWorkflow") {
     }
 }
 
-// تشغيل التوليد التلقائي إجبارياً في كل عمليات البناء والتحضير
 project.afterEvaluate {
     tasks.forEach { task ->
         if (task.name.contains("preBuild") || task.name.contains("prepare") || task.name.contains("generate")) {
