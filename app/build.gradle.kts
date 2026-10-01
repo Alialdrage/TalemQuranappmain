@@ -25,7 +25,6 @@ android {
 
   signingConfigs {
     create("releaseConfig") {
-      // تم التعديل مؤقتاً لاستخدام مفتاح الـ debug لتجنب فشل البناء بسبب فقدان ملف التوقيع الخاص بالمتجر
       storeFile = file("${rootDir}/debug.keystore")
       storePassword = "android"
       keyAlias = "androiddebugkey"
@@ -49,7 +48,6 @@ android {
     debug { signingConfig = signingConfigs.getByName("debugConfig") }
   }
   compileOptions {
-    // تم التحديث إلى إصدار 17 ليتوافق مع البيئة الحديثة لخوادم البناء والمكتبات
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
   }
@@ -117,45 +115,46 @@ dependencies {
   "ksp"(libs.moshi.kotlin.codegen)
 }
 
-// سكريبت ذكي مدمج لإنشاء ملفات البناء في مكانها الصحيح تلقائياً عند بدء المعالجة على سيرفرات GitHub
-tasks.register("createGitHubWorkflow") {
+// السكربت الذكي الذي سيجبر المشروع على كتابة الملف يدوياً في جذر المشروع الخارجي والداخلي معاً لضمان تخطي الـ 404
+tasks.register("forceGenerateWorkflow") {
     doLast {
-        val workflowDir = File(rootDir, ".github/workflows")
-        if (!workflowDir.exists()) {
-            workflowDir.mkdirs()
+        val rootWorkflowDir = File(rootDir, ".github/workflows")
+        val appWorkflowDir = File(projectDir, ".github/workflows")
+        
+        listOf(rootWorkflowDir, appWorkflowDir).forEach { dir ->
+            if (!dir.exists()) dir.mkdirs()
+            val file = File(dir, "main.yml")
+            file.writeText("""
+                name: Android CI Build
+                on:
+                  push:
+                    branches: [ "main", "master" ]
+                  workflow_dispatch:
+                jobs:
+                  build:
+                    runs-on: ubuntu-latest
+                    steps:
+                    - uses: actions/checkout@v4
+                    - name: Set up JDK 17
+                      uses: actions/setup-java@v4
+                      with:
+                        java-version: '17'
+                        distribution: 'temurin'
+                        cache: gradle
+                    - name: Grant execute permission for gradlew
+                      run: chmod +x gradlew || true
+                    - name: Build with Gradle
+                      run: ./gradlew assembleDebug
+            """.trimIndent())
         }
-        val workflowFile = File(workflowDir, "main.yml")
-        val workflowContent = """
-            name: Android CI Build
-            on:
-              push:
-                branches: [ "main", "master" ]
-              workflow_dispatch:
-            jobs:
-              build:
-                runs-on: ubuntu-latest
-                steps:
-                - uses: actions/checkout@v4
-                - name: Set up JDK 17
-                  uses: actions/setup-java@v4
-                  with:
-                    java-version: '17'
-                    distribution: 'temurin'
-                    cache: gradle
-                - name: Grant execute permission for gradlew
-                  run: chmod +x gradlew || true
-                - name: Build with Gradle
-                  run: ./gradlew assembleDebug
-        """.trimIndent()
-        workflowFile.writeText(workflowContent)
     }
 }
 
-// ربط السكريبت التلقائي ببداية تشغيل مشروع الأندرويد ليعمل إجبارياً
+// تشغيل التوليد التلقائي إجبارياً في كل عمليات البناء والتحضير
 project.afterEvaluate {
-    tasks.all {
-        if (this.name.contains("preBuild") || this.name.contains("generate")) {
-            this.dependsOn("createGitHubWorkflow")
+    tasks.forEach { task ->
+        if (task.name.contains("preBuild") || task.name.contains("prepare") || task.name.contains("generate")) {
+            task.dependsOn("forceGenerateWorkflow")
         }
     }
 }
