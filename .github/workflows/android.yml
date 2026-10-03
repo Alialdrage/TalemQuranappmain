@@ -3,19 +3,21 @@ on: [push, workflow_dispatch]
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v4
 
-    # استخدام إجراء سحابي جاهز ومجهز بكافة أدوات الأندرويد وBuildozer تلقائياً
+    # استخدام الحاوية الرسمية الجاهزة مع إجبار السيرفر على أمر التجميع المباشر
     - name: Build with Buildozer Action
       uses: ArtemGovorov/buildozer-action@v1
       with:
         workdir: .
         buildozer_version: stable
+        command: python3 -m buildozer android debug
 
     - name: Upload Finished APK
       uses: actions/upload-artifact@v4
       with:
         name: Quran-App
         path: bin/*.apk
+        
