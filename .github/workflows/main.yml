@@ -1,27 +1,29 @@
-name: Android CI Build
+from kivy.app import App
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.button import Button
+from kivy.uix.textinput import TextInput
+from kivy.uix.label import Label
 
-on:
-  push:
-    branches: [ "main", "master" ]
-  workflow_dispatch:
+DATA = {
+    1: {"n": "الفاتحة", "v": ["بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ", "الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ"]},
+    112: {"n": "الإخلاص", "v": ["قُلْ هُوَ اللَّهُ أَحَدٌ", "اللَّهُ الصَّمَدُ"]}
+}
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
+class QuranApp(App):
+    def build(self):
+        layout = BoxLayout(orientation='vertical', padding=10, spacing=10)
+        self.lbl = Label(text="=== تطبيق القرآن الكريم ===", font_size=20, size_hint_y=None, height=50)
+        layout.add_widget(self.lbl)
+        self.txt = TextInput(text="اختر سورة لقراءتها", font_size=18, readonly=True, halign='right')
+        layout.add_widget(self.txt)
+        for k, v in DATA.items():
+            btn = Button(text=f"سورة {v['n']}", size_hint_y=None, height=50, background_color=(0, 0.5, 0, 1))
+            btn.bind(on_press=lambda instance, num=k: self.show_surah(num))
+            layout.add_widget(btn)
+        return layout
 
-    steps:
-    - uses: actions/checkout@v4
+    def show_surah(self, num):
+        self.txt.text = "\n".join(DATA[num]["v"])
 
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-        cache: gradle
-
-    - name: Grant execute permission for gradlew
-      run: chmod +x gradlew || true
-
-    - name: Build with Gradle
-      run: ./gradlew assembleDebug
-      
+if __name__ == '__main__':
+    QuranApp().run()
