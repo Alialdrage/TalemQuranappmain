@@ -1,55 +1,56 @@
-name: Ultimate Flutter CI
+name: build_apk
 
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+    branches: [ main, master ]
   workflow_dispatch:
 
 jobs:
   build:
+    name: Build Flutter APK
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-      - name: Set up Java
+      - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
-          distribution: 'zulu'
+          distribution: 'temurin'
           java-version: '17'
+          cache: 'gradle'
 
-      - name: Set up Flutter
+      - name: Setup Flutter Environment
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
+          flutter-version: '3.24.4'
+          cache: true
 
-      - name: Create pubspec.yaml if missing
+      - name: Install Project Dependencies
         run: |
-          if [ ! -f pubspec.yaml ]; then
-            echo "name: quran_learning_app" > pubspec.yaml
-            echo "description: A new Flutter project." >> pubspec.yaml
-            echo "publish_to: 'none'" >> pubspec.yaml
-            echo "version: 1.0.0+1" >> pubspec.yaml
-            echo "environment:" >> pubspec.yaml
-            echo "  sdk: '>=3.0.0 <4.0.0'" >> pubspec.yaml
-            echo "dependencies:" >> pubspec.yaml
-            echo "  flutter:" >> pubspec.yaml
-            echo "    sdk: flutter" >> pubspec.yaml
-            echo "  cupertino_icons: ^1.0.6" >> pubspec.yaml
-            echo "flutter:" >> pubspec.yaml
-            echo "  uses-material-design: true" >> pubspec.yaml
+          flutter config --no-analytics
+          cd app
+          flutter pub get
+
+      - name: Enforce Gradle Execute Permissions
+        run: |
+          if [ -f "app/android/gradlew" ]; then
+            echo "Gradlew found. Granting execute permissions..."
+            chmod +x app/android/gradlew
+          else
+            echo "Warning: gradlew not found in app/android/ folder."
           fi
 
-      - name: Install dependencies
-        run: flutter pub get
+      - name: Execute Production Build (APK)
+        run: |
+          cd app
+          flutter build apk --release
 
-      - name: Build APK
-        run: flutter build apk --release
-
-      - name: Upload APK Artifact
+      - name: Archive and Upload Production APK
         uses: actions/upload-artifact@v4
         with:
-          name: quran-app-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          name: app-release-apk
+          path: app/build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+          retention-days: 7
