@@ -18,3 +18,10 @@ local.properties
 debug.keystore
 # Ignore Flutter build configuration file
 build_flutter.yml
+# Flutter build artifacts and settings
+build/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+all-packages
