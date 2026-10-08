@@ -16,3 +16,5 @@
 local.properties
 .env
 debug.keystore
+# Ignore Flutter build configuration file
+build_flutter.yml
