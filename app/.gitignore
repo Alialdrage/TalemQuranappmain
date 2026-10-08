@@ -1,3 +1,4 @@
 git add .github/workflows/build_flutter.yml
 git commit -m "إضافة سير عمل GitHub Actions لبناء APK"
 git push origin main
+git rm --cached build_flutter.yml
